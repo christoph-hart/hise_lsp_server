@@ -34,12 +34,12 @@ The binary calls `POST /api/diagnose_script` on HISE's REST API (default `localh
 
 ## Key behaviors
 
-- `didOpen` / `didSave` → diagnose and publish
-- `didChange` → no-op (HISE needs the file on disk)
+- `didOpen` / `didSave` / `didChange` → diagnose and publish
 - `didClose` → clear diagnostics
 - HISE not running → synthetic Error at line 1
 - File not included in HISE → synthetic Error at line 1
 - Clean file → empty diagnostics (clears previous)
+- `--strict` flag → promotes all severities to Error (1), prefixes message with original severity (e.g. `[warning]`)
 
 ## Files
 

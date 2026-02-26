@@ -49,7 +49,7 @@ Add to your project's `opencode.json`:
 {
   "lsp": {
     "hisescript": {
-      "command": ["tools/hise_lsp_server/bin/windows/hise-lsp.exe"],
+      "command": ["tools/hise_lsp_server/bin/windows/hise-lsp.exe", "--strict"],
       "extensions": [".js"]
     }
   }
@@ -67,7 +67,7 @@ Add to your project's `crush.json`:
   "lsp": {
     "hisescript": {
       "command": "tools/hise_lsp_server/bin/windows/hise-lsp.exe",
-      "args": []
+      "args": ["--strict"]
     }
   }
 }
@@ -85,8 +85,34 @@ Replace `bin/windows/hise-lsp.exe` with `bin/macos/hise-lsp` or `bin/linux/hise-
 |--------|---------|-------------|
 | `--port <N>` | 1900 | HISE REST API port |
 | `--host <H>` | localhost | HISE REST API host |
+| `--strict` | off | Promote all diagnostics to Error severity (see below) |
+| `--test` | — | Run built-in unit tests and exit |
 
-Environment variables `HISE_LSP_PORT` and `HISE_LSP_HOST` are also supported (command line args take priority).
+### Strict mode
+
+Agent platforms like OpenCode only surface **Error** severity diagnostics to the AI agent — warnings, info, and hints are silently filtered. The `--strict` flag promotes all diagnostic severities to Error (severity 1) so that every diagnostic reaches the agent. The original severity is preserved as a message prefix:
+
+```
+[warning] [CallScope] *.showControl (unsafe)
+[hint] Consider using 'local' instead of 'reg' in this scope
+```
+
+Errors (already severity 1) are passed through unchanged with no prefix.
+
+**Recommended for AI agents:**
+
+```json
+{
+  "lsp": {
+    "hisescript": {
+      "command": ["tools/hise_lsp_server/bin/windows/hise-lsp.exe", "--strict"],
+      "extensions": [".js"]
+    }
+  }
+}
+```
+
+**Omit `--strict` for normal editors** (VS Code, Neovim, etc.) so diagnostics render with the correct icons and colors.
 
 Example with custom port:
 
@@ -94,7 +120,7 @@ Example with custom port:
 {
   "lsp": {
     "hisescript": {
-      "command": ["tools/hise_lsp_server/bin/windows/hise-lsp.exe", "--port", "2000"],
+      "command": ["tools/hise_lsp_server/bin/windows/hise-lsp.exe", "--strict", "--port", "2000"],
       "extensions": [".js"]
     }
   }

@@ -409,6 +409,69 @@ class TestProtocol(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
+# Strict Mode Tests
+# ---------------------------------------------------------------------------
+
+class TestStrictMode(unittest.TestCase):
+    """Tests for --strict flag behavior."""
+
+    def setUp(self):
+        self.proc = start_lsp(extra_args=["--strict", "--port", "19999"])
+
+    def tearDown(self):
+        stop_lsp(self.proc)
+
+    def test_strict_flag_accepted(self):
+        """LSP starts and initializes successfully with --strict flag."""
+        send(self.proc, make_request("initialize", 1, {"capabilities": {}}))
+        resp = read_message(self.proc)
+        self.assertIsNotNone(resp, "Should receive initialize response")
+        self.assertEqual(resp["result"]["serverInfo"]["name"], "hise-lsp")
+
+    def test_strict_synthetic_error_still_severity_1(self):
+        """With --strict, synthetic connection errors remain severity 1."""
+        send(self.proc, make_request("initialize", 1, {"capabilities": {}}))
+        read_message(self.proc)
+
+        send(self.proc, make_notification("textDocument/didSave", {
+            "textDocument": {"uri": "file:///D:/test/Scripts/test.js"}
+        }))
+
+        resp = read_message(self.proc)
+        self.assertIsNotNone(resp, "Should receive publishDiagnostics")
+        diags = resp["params"]["diagnostics"]
+        self.assertEqual(len(diags), 1)
+        # Synthetic errors are already severity 1, so no [error] prefix should be added
+        self.assertEqual(diags[0]["severity"], 1)
+        self.assertNotIn("[error]", diags[0]["message"],
+                         "Errors should not get a severity prefix in strict mode")
+        self.assertIn("Cannot connect", diags[0]["message"])
+
+    def test_strict_full_session(self):
+        """Full session with --strict: initialize -> didChange -> shutdown -> exit."""
+        send(self.proc, make_request("initialize", 1, {"capabilities": {}}))
+        resp = read_message(self.proc)
+        self.assertEqual(resp["id"], 1)
+
+        send(self.proc, make_notification("initialized"))
+
+        send(self.proc, make_notification("textDocument/didChange", {
+            "textDocument": {"uri": "file:///D:/test/Scripts/test.js", "version": 2},
+            "contentChanges": [{"text": "// changed"}]
+        }))
+        resp = read_message(self.proc)
+        self.assertEqual(resp["method"], "textDocument/publishDiagnostics")
+
+        send(self.proc, make_request("shutdown", 2))
+        resp = read_message(self.proc)
+        self.assertEqual(resp["id"], 2)
+
+        send(self.proc, make_notification("exit"))
+        exit_code = self.proc.wait(timeout=5)
+        self.assertEqual(exit_code, 0)
+
+
+# ---------------------------------------------------------------------------
 # Live HISE Tests (optional, requires HISE running on port 1900)
 # ---------------------------------------------------------------------------
 

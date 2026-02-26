@@ -17,6 +17,10 @@ static void log(const String& msg)
 	std::cerr << msg.toStdString() << std::endl;
 }
 
+// When true, all diagnostic severities are promoted to Error (1)
+// so that agent platforms like OpenCode (which filter out non-errors) see everything.
+static bool strictMode = false;
+
 // Read a single LSP message from stdin.
 // Format: "Content-Length: N\r\n\r\n{...json...}"
 // Returns empty var on EOF.
@@ -144,6 +148,15 @@ static int mapSeverity(const String& severity)
 	return 1; // default to error
 }
 
+// Reverse map: LSP severity int to human-readable name (for strict mode prefixes)
+static String severityName(int severity)
+{
+	if (severity == 2) return "warning";
+	if (severity == 3) return "info";
+	if (severity == 4) return "hint";
+	return {};  // no prefix needed for errors
+}
+
 // Convert a single HISE diagnostic to an LSP Diagnostic object
 static var makeLspDiagnostic(int line, int column, int severity,
                               const String& message, const String& source,
@@ -152,6 +165,17 @@ static var makeLspDiagnostic(int line, int column, int severity,
 	// LSP lines/columns are 0-based, HISE lines are 1-based
 	int lspLine = jmax(0, line - 1);
 	int lspCol = jmax(0, column - 1);
+
+	// In strict mode, promote non-error severities to Error (1) and prefix
+	// the message with the original severity so the agent knows the true level.
+	auto finalMessage = message;
+	auto finalSeverity = severity;
+
+	if (strictMode && severity != 1)
+	{
+		finalMessage = "[" + severityName(severity) + "] " + message;
+		finalSeverity = 1;
+	}
 
 	DynamicObject::Ptr range = new DynamicObject();
 	DynamicObject::Ptr start = new DynamicObject();
@@ -165,9 +189,9 @@ static var makeLspDiagnostic(int line, int column, int severity,
 
 	DynamicObject::Ptr diag = new DynamicObject();
 	diag->setProperty("range", var(range.get()));
-	diag->setProperty("severity", severity);
+	diag->setProperty("severity", finalSeverity);
 	diag->setProperty("source", source.isNotEmpty() ? source : String("hisescript"));
-	diag->setProperty("message", message);
+	diag->setProperty("message", finalMessage);
 
 	// Include suggestions in diagnostic data (agents can use this)
 	if (suggestions.isArray() && suggestions.size() > 0)
@@ -668,6 +692,59 @@ static int runTests()
 			info["version"].toString() == "1.0.0");
 	}
 
+	// --- strict mode ---
+
+	{
+		// Enable strict mode for these tests, restore after
+		strictMode = true;
+
+		// Warning promoted to Error, message gets [warning] prefix
+		auto d1 = makeLspDiagnostic(5, 1, 2, "Unsafe call", "callscope", {});
+		TEST("strict: warning promoted to severity 1",
+			(int)d1["severity"] == 1);
+		TEST("strict: warning message has prefix",
+			d1["message"].toString() == "[warning] Unsafe call");
+
+		// Hint promoted to Error, message gets [hint] prefix
+		auto d2 = makeLspDiagnostic(10, 1, 4, "Use reg instead", "language", {});
+		TEST("strict: hint promoted to severity 1",
+			(int)d2["severity"] == 1);
+		TEST("strict: hint message has prefix",
+			d2["message"].toString() == "[hint] Use reg instead");
+
+		// Info promoted to Error, message gets [info] prefix
+		auto d3 = makeLspDiagnostic(15, 1, 3, "Some info", "api-validation", {});
+		TEST("strict: info promoted to severity 1",
+			(int)d3["severity"] == 1);
+		TEST("strict: info message has prefix",
+			d3["message"].toString() == "[info] Some info");
+
+		// Error stays as Error, no prefix
+		auto d4 = makeLspDiagnostic(20, 1, 1, "Missing semicolon", "syntax", {});
+		TEST("strict: error stays severity 1",
+			(int)d4["severity"] == 1);
+		TEST("strict: error message unchanged",
+			d4["message"].toString() == "Missing semicolon");
+
+		strictMode = false;
+	}
+
+	{
+		// Verify non-strict mode is unaffected (strictMode restored to false above)
+		auto d = makeLspDiagnostic(5, 1, 2, "Unsafe call", "callscope", {});
+		TEST("non-strict: warning stays severity 2",
+			(int)d["severity"] == 2);
+		TEST("non-strict: warning message unchanged",
+			d["message"].toString() == "Unsafe call");
+	}
+
+	// --- severityName ---
+
+	TEST("severityName: warning", severityName(2) == "warning");
+	TEST("severityName: info",    severityName(3) == "info");
+	TEST("severityName: hint",    severityName(4) == "hint");
+	TEST("severityName: error returns empty", severityName(1).isEmpty());
+
 	#undef TEST
 
 	std::cerr << std::endl;
@@ -707,18 +784,12 @@ int main(int argc, char* argv[])
 			server.hise.port = String(argv[++i]).getIntValue();
 		else if (arg == "--host" && i + 1 < argc)
 			server.hise.host = String(argv[++i]);
+		else if (arg == "--strict")
+			strictMode = true;
 	}
 
-	// Also check environment variables (lower priority than args)
-	auto envPort = SystemStats::getEnvironmentVariable("HISE_LSP_PORT", "");
-	auto envHost = SystemStats::getEnvironmentVariable("HISE_LSP_HOST", "");
-
-	if (envPort.isNotEmpty() && server.hise.port == 1900)
-		server.hise.port = envPort.getIntValue();
-	if (envHost.isNotEmpty() && server.hise.host == "localhost")
-		server.hise.host = envHost;
-
-	log("hise-lsp v1.0.0 starting (HISE at " + server.hise.host + ":" + String(server.hise.port) + ")");
+	log("hise-lsp v1.0.0 starting (HISE at " + server.hise.host + ":" + String(server.hise.port)
+	    + (strictMode ? ", strict mode" : "") + ")");
 
 	runLspLoop(server);
 
