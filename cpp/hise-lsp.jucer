@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<JUCERPROJECT id="hlspSv" name="hise-lsp" projectType="consoleapp"
+              version="1.0.0" bundleIdentifier="com.HISE.hise-lsp"
+              includeBinaryInAppConfig="1" displaySplashScreen="0" reportAppUsage="0"
+              splashScreenColour="Dark" cppLanguageStandard="17" companyCopyright=""
+              jucerFormatVersion="1">
+  <MAINGROUP id="hlspMG" name="hise-lsp">
+    <GROUP id="{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}" name="Source">
+      <FILE id="hlspM1" name="Main.cpp" compile="1" resource="0" file="Source/Main.cpp"/>
+    </GROUP>
+  </MAINGROUP>
+  <EXPORTFORMATS>
+    <VS2026 targetFolder="Builds/VisualStudio2026">
+      <CONFIGURATIONS>
+        <CONFIGURATION name="Release" winWarningLevel="4" generateManifest="1" winArchitecture="x64"
+                       isDebug="0" optimisation="3" targetName="hise-lsp"
+                       debugInformationFormat="ProgramDatabase" enablePluginBinaryCopyStep="0"/>
+        <CONFIGURATION name="Debug" winWarningLevel="4" generateManifest="1" winArchitecture="x64"
+                       isDebug="1" optimisation="1" targetName="hise-lsp"
+                       debugInformationFormat="ProgramDatabase" enablePluginBinaryCopyStep="0"/>
+      </CONFIGURATIONS>
+      <MODULEPATHS>
+        <MODULEPATH id="juce_core" path="../../../JUCE/modules"/>
+        <MODULEPATH id="juce_data_structures" path="../../../JUCE/modules"/>
+        <MODULEPATH id="juce_events" path="../../../JUCE/modules"/>
+      </MODULEPATHS>
+    </VS2026>
+    <XCODE_MAC targetFolder="Builds/MacOSX">
+      <CONFIGURATIONS>
+        <CONFIGURATION name="Release" isDebug="0" optimisation="3" targetName="hise-lsp"
+                       osxSDK="default" osxCompatibility="10.13 SDK" osxArchitecture="64BitUniversal"
+                       cppLanguageStandard="c++17" cppLibType="libc++" macOSDeploymentTarget="10.13"/>
+        <CONFIGURATION name="Debug" isDebug="1" optimisation="1" targetName="hise-lsp"
+                       osxSDK="default" osxCompatibility="10.13 SDK" osxArchitecture="64BitUniversal"
+                       cppLanguageStandard="c++17" cppLibType="libc++" macOSDeploymentTarget="10.13"/>
+      </CONFIGURATIONS>
+      <MODULEPATHS>
+        <MODULEPATH id="juce_core" path="../../../JUCE/modules"/>
+        <MODULEPATH id="juce_data_structures" path="../../../JUCE/modules"/>
+        <MODULEPATH id="juce_events" path="../../../JUCE/modules"/>
+      </MODULEPATHS>
+    </XCODE_MAC>
+  </EXPORTFORMATS>
+  <MODULES>
+    <MODULE id="juce_core" showAllCode="1" useLocalCopy="0"/>
+    <MODULE id="juce_data_structures" showAllCode="1" useLocalCopy="0"/>
+    <MODULE id="juce_events" showAllCode="1" useLocalCopy="0" useGlobalPath="0"/>
+  </MODULES>
+  <JUCEOPTIONS/>
+</JUCERPROJECT>

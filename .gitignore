@@ -1,0 +1,19 @@
+# Projucer-generated build files
+cpp/Builds/
+cpp/JuceLibraryCode/
+
+# IDE files
+*.suo
+*.user
+*.ncb
+*.sdf
+*.opensdf
+.vs/
+*.xcworkspace
+xcuserdata/
+DerivedData/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo

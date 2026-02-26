@@ -1,0 +1,9 @@
+{
+  "hisescript": {
+    "command": "tools/hise_lsp_server/bin/windows/hise-lsp.exe",
+    "args": [],
+    "extensionToLanguage": {
+      ".js": "hisescript"
+    }
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "lsp": {
+    "hisescript": {
+      "command": ["tools/hise_lsp_server/bin/windows/hise-lsp.exe"],
+      "extensions": [".js"]
+    }
+  }
+}

@@ -1,0 +1,5 @@
+{
+  "name": "hise-lsp",
+  "description": "HISEScript diagnostics via HISE runtime — catches API hallucinations with fuzzy suggestions",
+  "version": "1.0.0"
+}
