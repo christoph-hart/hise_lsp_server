@@ -299,10 +299,10 @@ public:
 	{
 		DynamicObject::Ptr capabilities = new DynamicObject();
 
-		// Text document sync: open/close + save notifications, no didChange
+		// Text document sync: open/close + full content on change + save
 		DynamicObject::Ptr textDocSync = new DynamicObject();
 		textDocSync->setProperty("openClose", true);
-		textDocSync->setProperty("change", 0);  // 0 = None (no didChange)
+		textDocSync->setProperty("change", 1);  // 1 = Full (receive entire document on change)
 		textDocSync->setProperty("save", true);
 		capabilities->setProperty("textDocumentSync", var(textDocSync.get()));
 
@@ -326,6 +326,13 @@ public:
 	}
 
 	void handleDidSave(const var& params)
+	{
+		auto uri = params["textDocument"]["uri"].toString();
+		if (uri.isNotEmpty())
+			diagnoseAndPublish(uri);
+	}
+
+	void handleDidChange(const var& params)
 	{
 		auto uri = params["textDocument"]["uri"].toString();
 		if (uri.isNotEmpty())
@@ -420,7 +427,7 @@ static void runLspLoop(LspServer& server)
 		}
 		else if (method == "textDocument/didChange")
 		{
-			// No-op — we only care about saves (file must be on disk for HISE)
+			server.handleDidChange(params);
 		}
 		else if (method == "textDocument/didClose")
 		{
@@ -649,8 +656,8 @@ static int runTests()
 		auto sync = caps["textDocumentSync"];
 		TEST("handleInitialize: openClose is true",
 			(bool)sync["openClose"] == true);
-		TEST("handleInitialize: change is 0 (None)",
-			(int)sync["change"] == 0);
+	TEST("handleInitialize: change is 1 (Full)",
+		(int)sync["change"] == 1);
 		TEST("handleInitialize: save is true",
 			(bool)sync["save"] == true);
 

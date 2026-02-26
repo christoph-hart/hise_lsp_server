@@ -131,7 +131,9 @@ Example with custom port:
 Minimal surface — only document sync:
 
 - `textDocumentSync.openClose`: true
-- `textDocumentSync.change`: 0 (none — no `didChange`)
+- `textDocumentSync.change`: 1 (full — receives entire document on every change)
 - `textDocumentSync.save`: true
+
+Both `textDocument/didChange` and `textDocument/didSave` trigger diagnostics. This ensures compatibility with agents that use `didChange` (OpenCode) and agents that use `didSave` (Claude Code, VS Code).
 
 No hover, completion, goto, formatting, or any other LSP feature. Just diagnostics.

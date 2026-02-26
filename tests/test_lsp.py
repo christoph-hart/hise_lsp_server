@@ -221,7 +221,7 @@ class TestProtocol(unittest.TestCase):
         caps = result["capabilities"]
         sync = caps["textDocumentSync"]
         self.assertTrue(sync["openClose"])
-        self.assertEqual(sync["change"], 0)
+        self.assertEqual(sync["change"], 1)
         self.assertTrue(sync["save"])
 
         info = result["serverInfo"]
@@ -299,8 +299,8 @@ class TestProtocol(unittest.TestCase):
         self.assertEqual(params["uri"], "file:///D:/test/Scripts/test.js")
         self.assertEqual(len(params["diagnostics"]), 0)
 
-    def test_did_change_is_noop(self):
-        """didChange produces no response (no-op)."""
+    def test_did_change_triggers_diagnostics(self):
+        """didChange with full content triggers diagnostics (OpenCode compatibility)."""
         send(self.proc, make_request("initialize", 1, {"capabilities": {}}))
         read_message(self.proc)
 
@@ -309,8 +309,16 @@ class TestProtocol(unittest.TestCase):
             "contentChanges": [{"text": "// changed"}]
         }))
 
-        self.assertTrue(expect_no_message(self.proc, timeout=0.5),
-                        "didChange should be a no-op")
+        resp = read_message(self.proc)
+        self.assertIsNotNone(resp, "Should receive publishDiagnostics")
+        self.assertEqual(resp["method"], "textDocument/publishDiagnostics")
+
+        params = resp["params"]
+        self.assertEqual(params["uri"], "file:///D:/test/Scripts/test.js")
+
+        diags = params["diagnostics"]
+        self.assertEqual(len(diags), 1)
+        self.assertIn("Cannot connect", diags[0]["message"])
 
     def test_unknown_request_method_not_found(self):
         """Unknown request method returns MethodNotFound error."""
