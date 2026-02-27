@@ -1,0 +1,82 @@
+{
+  "name": "hise-vscode",
+  "displayName": "HISE Script",
+  "description": "HiseScript language support via LSP — diagnostics, suggestions, and validation powered by the HISE runtime.",
+  "version": "0.1.0",
+  "publisher": "hise",
+  "engines": {
+    "vscode": "^1.82.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "main": "./out/extension.js",
+  "activationEvents": [
+    "workspaceContains:project_info.xml"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "hisescript",
+        "aliases": [
+          "HiseScript",
+          "hisescript"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "hisescript",
+        "scopeName": "source.hisescript",
+        "path": "./syntaxes/hisescript.tmLanguage.json"
+      }
+    ],
+    "commands": [
+      {
+        "command": "hisescript.compile",
+        "title": "HISE: Compile"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "hisescript.compile",
+        "key": "f5",
+        "when": "editorLangId == hisescript"
+      }
+    ],
+    "configuration": {
+      "title": "HISE Script",
+      "properties": {
+        "hisescript.server.port": {
+          "type": "number",
+          "default": 1900,
+          "description": "HISE REST API port."
+        },
+        "hisescript.server.host": {
+          "type": "string",
+          "default": "localhost",
+          "description": "HISE REST API host."
+        },
+        "hisescript.trace.server": {
+          "type": "string",
+          "enum": [
+            "off",
+            "messages",
+            "verbose"
+          ],
+          "default": "off",
+          "description": "Trace communication between VS Code and the HiseScript language server."
+        }
+      }
+    }
+  },
+  "dependencies": {
+    "vscode-languageclient": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^25.3.2",
+    "@types/vscode": "^1.82.0",
+    "typescript": "^5.0.0"
+  }
+}

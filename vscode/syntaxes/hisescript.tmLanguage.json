@@ -1,0 +1,43 @@
+{
+  "scopeName": "source.hisescript",
+  "name": "HiseScript",
+  "comment": "HiseScript grammar — extends JavaScript with HISE-specific keywords.",
+  "patterns": [
+    { "include": "#hisescript-keywords" },
+    { "include": "source.js" }
+  ],
+  "repository": {
+    "hisescript-keywords": {
+      "patterns": [
+        {
+          "name": "storage.type.hisescript",
+          "match": "\\b(reg|local)\\b"
+        },
+        {
+          "name": "keyword.control.hisescript",
+          "match": "\\b(include)\\b"
+        },
+        {
+          "name": "support.class.hisescript",
+          "match": "\\b(Content|Synth|Engine|Console|Message|Math|Server|Settings|FileSystem|Midi|Sampler|Selection|Globals)\\b"
+        },
+        {
+          "name": "variable.language.hisescript",
+          "match": "\\b(Graphics)\\b"
+        },
+        {
+          "name": "constant.language.hisescript",
+          "match": "\\b(undefined)\\b"
+        },
+        {
+          "name": "keyword.other.namespace.hisescript",
+          "match": "\\bnamespace\\b"
+        },
+        {
+          "name": "keyword.other.inline.hisescript",
+          "match": "\\binline\\b"
+        }
+      ]
+    }
+  }
+}
