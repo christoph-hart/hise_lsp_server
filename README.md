@@ -49,7 +49,7 @@ Add to your project's `opencode.json`:
 {
   "lsp": {
     "hisescript": {
-      "command": ["tools/hise_lsp_server/bin/windows/hise-lsp.exe", "--strict"],
+      "command": ["tools/hise_lsp_server/bin/windows/hise-lsp.exe", "--strict", "--flat-suggestions"],
       "extensions": [".js"]
     }
   }
@@ -58,22 +58,12 @@ Add to your project's `opencode.json`:
 
 See `config/opencode.json.example` for a complete example.
 
-#### Crush
-
-Add to your project's `crush.json`:
-
-```json
-{
-  "lsp": {
-    "hisescript": {
-      "command": "tools/hise_lsp_server/bin/windows/hise-lsp.exe",
-      "args": ["--strict"]
-    }
-  }
-}
-```
-
-See `config/crush.json.example` for a complete example.
+> **Why both flags?** As of early 2026, OpenCode's LSP integration has two limitations that affect AI agents:
+>
+> 1. **Only Error-severity diagnostics are surfaced** — warnings, info, and hints are silently filtered before reaching the agent. `--strict` promotes all severities to Error with a `[warning]`/`[info]`/`[hint]` prefix in the message text.
+> 2. **The diagnostic `data` field is ignored** — OpenCode only reads the `message` string, so structured suggestions (e.g., fuzzy-matched method names) are invisible to the agent. `--flat-suggestions` coalesces them into the message as `". Use: suggestion"`.
+>
+> These are general OpenCode limitations that affect all LSPs, not just hise-lsp. This may change in future OpenCode versions — check their release notes and remove the flags if they become unnecessary.
 
 #### Platform paths
 
@@ -86,6 +76,7 @@ Replace `bin/windows/hise-lsp.exe` with `bin/macos/hise-lsp` or `bin/linux/hise-
 | `--port <N>` | 1900 | HISE REST API port |
 | `--host <H>` | localhost | HISE REST API host |
 | `--strict` | off | Promote all diagnostics to Error severity (see below) |
+| `--flat-suggestions` | off | Coalesce suggestions into the message string (see below) |
 | `--test` | — | Run built-in unit tests and exit |
 
 ### Strict mode
@@ -99,20 +90,38 @@ Agent platforms like OpenCode only surface **Error** severity diagnostics to the
 
 Errors (already severity 1) are passed through unchanged with no prefix.
 
-**Recommended for AI agents:**
+### Flat suggestions
+
+HISE diagnostics can include structured suggestions (e.g., fuzzy-matched method names). In standard LSP mode these are returned in the diagnostic's `data` field, which spec-compliant clients can read and display.
+
+Some agent platforms don't read the `data` field at all — only the `message` string is visible to the AI agent. The `--flat-suggestions` flag coalesces suggestions into the message string:
+
+```
+Console.prins not found. Use: print
+Console.prinsts not found. Use: print or printer
+g.drawText is deprecated. Use: g.drawAlignedText() for proper text placement
+```
+
+Without the flag, the same diagnostics would show only the base message (e.g., `"Console.prins not found"`) and the suggestions would be in the structured `data` field.
+
+This flag is independent of `--strict` — they can be used separately or together.
+
+### Recommended configuration for AI agents
+
+Most AI agent platforms need both flags:
 
 ```json
 {
   "lsp": {
     "hisescript": {
-      "command": ["tools/hise_lsp_server/bin/windows/hise-lsp.exe", "--strict"],
+      "command": ["tools/hise_lsp_server/bin/windows/hise-lsp.exe", "--strict", "--flat-suggestions"],
       "extensions": [".js"]
     }
   }
 }
 ```
 
-**Omit `--strict` for normal editors** (VS Code, Neovim, etc.) so diagnostics render with the correct icons and colors.
+**Omit both flags for normal editors** (VS Code, Neovim, etc.) so diagnostics render with the correct severities and structured suggestion data.
 
 Example with custom port:
 
@@ -120,7 +129,7 @@ Example with custom port:
 {
   "lsp": {
     "hisescript": {
-      "command": ["tools/hise_lsp_server/bin/windows/hise-lsp.exe", "--strict", "--port", "2000"],
+      "command": ["tools/hise_lsp_server/bin/windows/hise-lsp.exe", "--strict", "--flat-suggestions", "--port", "2000"],
       "extensions": [".js"]
     }
   }

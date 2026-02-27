@@ -21,6 +21,11 @@ static void log(const String& msg)
 // so that agent platforms like OpenCode (which filter out non-errors) see everything.
 static bool strictMode = false;
 
+// When true, the suggestions array is coalesced into the message string
+// as ". Use: suggestion1 or suggestion2" so agents that don't read the
+// LSP diagnostic data field can still see them.
+static bool flatSuggestions = false;
+
 // Read a single LSP message from stdin.
 // Format: "Content-Length: N\r\n\r\n{...json...}"
 // Returns empty var on EOF.
@@ -166,14 +171,26 @@ static var makeLspDiagnostic(int line, int column, int severity,
 	int lspLine = jmax(0, line - 1);
 	int lspCol = jmax(0, column - 1);
 
-	// In strict mode, promote non-error severities to Error (1) and prefix
-	// the message with the original severity so the agent knows the true level.
 	auto finalMessage = message;
 	auto finalSeverity = severity;
 
+	// Coalesce suggestions into the message string so agents that don't
+	// read the LSP diagnostic data field can still see them.
+	if (flatSuggestions && suggestions.isArray() && suggestions.size() > 0)
+	{
+		finalMessage += ". Use: ";
+		for (int i = 0; i < suggestions.size(); i++)
+		{
+			if (i > 0) finalMessage += " or ";
+			finalMessage += suggestions[i].toString();
+		}
+	}
+
+	// In strict mode, promote non-error severities to Error (1) and prefix
+	// the message with the original severity so the agent knows the true level.
 	if (strictMode && severity != 1)
 	{
-		finalMessage = "[" + severityName(severity) + "] " + message;
+		finalMessage = "[" + severityName(severity) + "] " + finalMessage;
 		finalSeverity = 1;
 	}
 
@@ -738,6 +755,116 @@ static int runTests()
 			d["message"].toString() == "Unsafe call");
 	}
 
+	// --- flat-suggestions only (no strict) ---
+
+	{
+		flatSuggestions = true;
+		strictMode = false;
+
+		// Single suggestion coalesced into message
+		Array<var> sugg1;
+		sugg1.add("print");
+		auto d1 = makeLspDiagnostic(5, 1, 1, "Console.prins not found", "api-validation", var(sugg1));
+		TEST("flat: single suggestion appended",
+			d1["message"].toString() == "Console.prins not found. Use: print");
+		TEST("flat: severity unchanged (error stays error)",
+			(int)d1["severity"] == 1);
+
+		// Multiple suggestions joined with " or "
+		Array<var> sugg2;
+		sugg2.add("print");
+		sugg2.add("printer");
+		auto d2 = makeLspDiagnostic(5, 1, 1, "Console.prinsts not found", "api-validation", var(sugg2));
+		TEST("flat: multiple suggestions joined with or",
+			d2["message"].toString() == "Console.prinsts not found. Use: print or printer");
+
+		// Warning severity preserved when strict is off
+		auto d3 = makeLspDiagnostic(5, 1, 2, "Unsafe call", "callscope", var(sugg1));
+		TEST("flat: warning severity preserved without strict",
+			(int)d3["severity"] == 2);
+		TEST("flat: warning message has suggestion but no prefix",
+			d3["message"].toString() == "Unsafe call. Use: print");
+
+		// No suggestions — message unchanged
+		auto d4 = makeLspDiagnostic(5, 1, 1, "Missing semicolon", "syntax", {});
+		TEST("flat: no suggestions leaves message unchanged",
+			d4["message"].toString() == "Missing semicolon");
+
+		// Empty suggestions array — message unchanged
+		auto d5 = makeLspDiagnostic(5, 1, 1, "Missing semicolon", "syntax", var(Array<var>()));
+		TEST("flat: empty suggestions leaves message unchanged",
+			d5["message"].toString() == "Missing semicolon");
+
+		flatSuggestions = false;
+	}
+
+	// --- flat-suggestions + strict combined ---
+
+	{
+		flatSuggestions = true;
+		strictMode = true;
+
+		// Warning with suggestion: coalesced then prefixed
+		Array<var> sugg;
+		sugg.add("print");
+		auto d1 = makeLspDiagnostic(5, 1, 2, "Console.prins not found", "api-validation", var(sugg));
+		TEST("flat+strict: warning promoted to severity 1",
+			(int)d1["severity"] == 1);
+		TEST("flat+strict: warning has prefix and suggestion",
+			d1["message"].toString() == "[warning] Console.prins not found. Use: print");
+
+		// Error with suggestion: no prefix, suggestion appended
+		auto d2 = makeLspDiagnostic(5, 1, 1, "Console.prins not found", "api-validation", var(sugg));
+		TEST("flat+strict: error stays severity 1",
+			(int)d2["severity"] == 1);
+		TEST("flat+strict: error has suggestion but no prefix",
+			d2["message"].toString() == "Console.prins not found. Use: print");
+
+		// Warning without suggestion: just prefixed
+		auto d3 = makeLspDiagnostic(5, 1, 2, "Unsafe call", "callscope", {});
+		TEST("flat+strict: warning without suggestion just prefixed",
+			d3["message"].toString() == "[warning] Unsafe call");
+
+		flatSuggestions = false;
+		strictMode = false;
+	}
+
+	// --- neither flag (standard LSP behavior) ---
+
+	{
+		flatSuggestions = false;
+		strictMode = false;
+
+		Array<var> sugg;
+		sugg.add("print");
+		auto d = makeLspDiagnostic(5, 1, 2, "Console.prins not found", "api-validation", var(sugg));
+		TEST("neither: suggestions not in message",
+			d["message"].toString() == "Console.prins not found");
+		TEST("neither: severity preserved",
+			(int)d["severity"] == 2);
+		TEST("neither: suggestions in data field",
+			d["data"]["suggestions"].isArray() && d["data"]["suggestions"].size() == 1);
+	}
+
+	// --- strict only (no flat-suggestions) ---
+
+	{
+		flatSuggestions = false;
+		strictMode = true;
+
+		Array<var> sugg;
+		sugg.add("print");
+		auto d = makeLspDiagnostic(5, 1, 2, "Console.prins not found", "api-validation", var(sugg));
+		TEST("strict-only: suggestions not in message",
+			d["message"].toString() == "[warning] Console.prins not found");
+		TEST("strict-only: severity promoted",
+			(int)d["severity"] == 1);
+		TEST("strict-only: suggestions still in data field",
+			d["data"]["suggestions"].isArray() && d["data"]["suggestions"].size() == 1);
+
+		strictMode = false;
+	}
+
 	// --- severityName ---
 
 	TEST("severityName: warning", severityName(2) == "warning");
@@ -786,10 +913,16 @@ int main(int argc, char* argv[])
 			server.hise.host = String(argv[++i]);
 		else if (arg == "--strict")
 			strictMode = true;
+		else if (arg == "--flat-suggestions")
+			flatSuggestions = true;
 	}
 
+	StringArray flags;
+	if (strictMode)     flags.add("strict");
+	if (flatSuggestions) flags.add("flat-suggestions");
+
 	log("hise-lsp v1.0.0 starting (HISE at " + server.hise.host + ":" + String(server.hise.port)
-	    + (strictMode ? ", strict mode" : "") + ")");
+	    + (flags.isEmpty() ? "" : ", " + flags.joinIntoString(", ")) + ")");
 
 	runLspLoop(server);
 

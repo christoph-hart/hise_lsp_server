@@ -1,9 +1,0 @@
-{
-  "$schema": "https://charm.land/crush.json",
-  "lsp": {
-    "hisescript": {
-      "command": "tools/hise_lsp_server/bin/windows/hise-lsp.exe",
-      "args": ["--strict"]
-    }
-  }
-}
