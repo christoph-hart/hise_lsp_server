@@ -43,18 +43,33 @@ The plugin's `.lsp.json` maps `.js` files to `hisescript` and points to the prec
 
 #### OpenCode
 
-Add to your project's `opencode.json`:
+Add to your HISE project's `opencode.json` (place it in the project root, e.g. `extras/demo_project/opencode.json`):
 
 ```json
 {
+  "$schema": "https://opencode.ai/config.json",
   "lsp": {
     "hisescript": {
-      "command": ["tools/hise_lsp_server/bin/windows/hise-lsp.exe", "--strict", "--flat-suggestions"],
+      "command": ["/absolute/path/to/hise_lsp_server/bin/macos/hise-lsp", "--strict", "--flat-suggestions"],
       "extensions": [".js"]
     }
   }
 }
 ```
+
+> **Important — use absolute paths and project-level config:**
+>
+> - **Absolute paths:** OpenCode does not support `{env:VAR}` substitution in LSP `command` arrays. Use the full absolute path to the binary.
+> - **Project-level config:** This config must go in your HISE project directory, **not** in the global OpenCode config (`~/.local/share/opencode/opencode.json`). A global config would override the `.js` extension mapping for the built-in JavaScript/TypeScript LSP across all your projects. By scoping it per-project, only `.js` files in your HISE project are diagnosed as HISEScript.
+> - **gitignore it:** Since the path is both machine-specific and platform-specific (`bin/macos/`, `bin/windows/`, `bin/linux/`), add `opencode.json` to your `.gitignore`. Each developer creates their own locally.
+
+Replace the binary path with the correct one for your platform:
+
+| Platform | Binary path |
+|----------|-------------|
+| Windows | `.../bin/windows/hise-lsp.exe` |
+| macOS | `.../bin/macos/hise-lsp` |
+| Linux | `.../bin/linux/hise-lsp` |
 
 See `config/opencode.json.example` for a complete example.
 
@@ -114,7 +129,7 @@ Most AI agent platforms need both flags:
 {
   "lsp": {
     "hisescript": {
-      "command": ["tools/hise_lsp_server/bin/windows/hise-lsp.exe", "--strict", "--flat-suggestions"],
+      "command": ["/path/to/hise_lsp_server/bin/macos/hise-lsp", "--strict", "--flat-suggestions"],
       "extensions": [".js"]
     }
   }
@@ -129,7 +144,7 @@ Example with custom port:
 {
   "lsp": {
     "hisescript": {
-      "command": ["tools/hise_lsp_server/bin/windows/hise-lsp.exe", "--strict", "--flat-suggestions", "--port", "2000"],
+      "command": ["/path/to/hise_lsp_server/bin/macos/hise-lsp", "--strict", "--flat-suggestions", "--port", "2000"],
       "extensions": [".js"]
     }
   }
