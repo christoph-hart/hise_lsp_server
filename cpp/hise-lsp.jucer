@@ -1,10 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<JUCERPROJECT id="hlspSv" name="hise-lsp" projectType="consoleapp"
-              version="1.0.0" bundleIdentifier="com.HISE.hise-lsp"
-              includeBinaryInAppConfig="1" displaySplashScreen="0" reportAppUsage="0"
-              splashScreenColour="Dark" cppLanguageStandard="17" companyCopyright=""
-              jucerFormatVersion="1">
+<JUCERPROJECT id="hlspSv" name="hise-lsp" projectType="consoleapp" version="1.0.1"
+              bundleIdentifier="com.HISE.hise-lsp" includeBinaryInAppConfig="1"
+              displaySplashScreen="0" reportAppUsage="0" splashScreenColour="Dark"
+              cppLanguageStandard="17" companyCopyright="" jucerFormatVersion="1">
   <MAINGROUP id="hlspMG" name="hise-lsp">
     <GROUP id="{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}" name="Source">
       <FILE id="hlspM1" name="Main.cpp" compile="1" resource="0" file="Source/Main.cpp"/>
@@ -14,11 +13,11 @@
     <VS2026 targetFolder="Builds/VisualStudio2026">
       <CONFIGURATIONS>
         <CONFIGURATION name="Release" winWarningLevel="4" generateManifest="1" winArchitecture="x64"
-                       isDebug="0" optimisation="3" targetName="hise-lsp"
-                       debugInformationFormat="ProgramDatabase" enablePluginBinaryCopyStep="0"/>
+                       isDebug="0" optimisation="3" targetName="hise-lsp" debugInformationFormat="ProgramDatabase"
+                       enablePluginBinaryCopyStep="0"/>
         <CONFIGURATION name="Debug" winWarningLevel="4" generateManifest="1" winArchitecture="x64"
-                       isDebug="1" optimisation="1" targetName="hise-lsp"
-                       debugInformationFormat="ProgramDatabase" enablePluginBinaryCopyStep="0"/>
+                       isDebug="1" optimisation="1" targetName="hise-lsp" debugInformationFormat="ProgramDatabase"
+                       enablePluginBinaryCopyStep="0"/>
       </CONFIGURATIONS>
       <MODULEPATHS>
         <MODULEPATH id="juce_core" path="../../../JUCE/modules"/>

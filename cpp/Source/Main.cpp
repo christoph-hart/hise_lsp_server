@@ -353,7 +353,7 @@ public:
 		// Server info
 		DynamicObject::Ptr serverInfo = new DynamicObject();
 		serverInfo->setProperty("name", "hise-lsp");
-		serverInfo->setProperty("version", "1.0.0");
+		serverInfo->setProperty("version", ProjectInfo::versionString);
 		result->setProperty("serverInfo", var(serverInfo.get()));
 
 		return var(result.get());
@@ -706,7 +706,7 @@ static int runTests()
 		TEST("handleInitialize: server name",
 			info["name"].toString() == "hise-lsp");
 		TEST("handleInitialize: server version",
-			info["version"].toString() == "1.0.0");
+			info["version"].toString() == ProjectInfo::versionString);
 	}
 
 	// --- strict mode ---
@@ -901,6 +901,7 @@ int main(int argc, char* argv[])
 		return runTests();
 
 	LspServer server;
+	String diagnoseFilePath;
 
 	// Parse command line args
 	for (int i = 1; i < argc; i++)
@@ -915,14 +916,60 @@ int main(int argc, char* argv[])
 			strictMode = true;
 		else if (arg == "--flat-suggestions")
 			flatSuggestions = true;
+		else if (arg == "--diagnose" && i + 1 < argc)
+			diagnoseFilePath = String(argv[++i]);
+	}
+
+	// One-shot diagnose mode: check a single file and exit
+	if (diagnoseFilePath.isNotEmpty())
+	{
+		auto result = server.hise.diagnoseFile(diagnoseFilePath);
+
+		if (!result.connected)
+		{
+			std::cerr << result.errorMessage.toStdString() << std::endl;
+			return 1;
+		}
+
+		if (!result.success)
+		{
+			std::cerr << result.errorMessage.toStdString() << std::endl;
+			return 1;
+		}
+
+		if (!result.diagnostics.isArray() || result.diagnostics.size() == 0)
+			return 0;
+
+		for (int i = 0; i < result.diagnostics.size(); i++)
+		{
+			auto& d = result.diagnostics[i];
+			std::cout << d["severity"].toString().toStdString()
+			          << " (line " << (int)d["line"] << "): "
+			          << d["message"].toString().toStdString();
+
+			auto suggestions = d["suggestions"];
+			if (suggestions.isArray() && suggestions.size() > 0)
+			{
+				std::cout << ". Use: ";
+				for (int j = 0; j < suggestions.size(); j++)
+				{
+					if (j > 0) std::cout << " or ";
+					std::cout << suggestions[j].toString().toStdString();
+				}
+			}
+
+			std::cout << std::endl;
+		}
+
+		return 1;
 	}
 
 	StringArray flags;
 	if (strictMode)     flags.add("strict");
 	if (flatSuggestions) flags.add("flat-suggestions");
 
-	log("hise-lsp v1.0.0 starting (HISE at " + server.hise.host + ":" + String(server.hise.port)
-	    + (flags.isEmpty() ? "" : ", " + flags.joinIntoString(", ")) + ")");
+	log(String("hise-lsp v" + String(ProjectInfo::versionString) + " starting (HISE at " + server.hise.host + ":" + String(server.hise.port)
+	    + (flags.isEmpty() ? "" : ", " + flags.joinIntoString(", ")) + ")"));
 
 	runLspLoop(server);
 

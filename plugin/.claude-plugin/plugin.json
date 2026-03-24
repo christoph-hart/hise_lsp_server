@@ -1,5 +1,14 @@
 {
   "name": "hise-lsp",
   "description": "HISEScript diagnostics via HISE runtime — catches API hallucinations with fuzzy suggestions",
-  "version": "1.0.0"
+  "version": "1.0.0",
+  "lspServers": {
+    "hisescript": {
+      "command": "${CLAUDE_PLUGIN_ROOT}/../bin/windows/hise-lsp.exe",
+      "args": [],
+      "extensionToLanguage": {
+        ".js": "hisescript"
+      }
+    }
+  }
 }
